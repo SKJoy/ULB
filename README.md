@@ -2,6 +2,17 @@
 
 A collection of high-performance, professional Linux utilities designed for efficiency, reliability, and a zero-dependency footprint. These tools are engineered to act as native system commands, providing a seamless experience for system administrators and developers.
 
+## 🚀 Installation
+- Create a temporary local folder: `mkdir /ulb; cd /ulb`
+- Clone repository: `git clone https://github.com/SKJoy/ULB.git`
+- Set executable for all users: `chmod +x *; chmod 0755 *`
+- Move to Linux binary folder: `mv -f * /usr/local/bin`
+- You may delete the `/ulb` folder now
+
+### Verification command
+- `24mb -h`
+- `gitpush`
+
 ## 🛠️ Included Utilities
 
 ### 1. `2m4b` (Too Much for Backup)
@@ -15,19 +26,6 @@ A universal, multi-channel backup and distribution pipeline.
 ### 2. `gitpush`
 A streamlined wrapper for the Git commit-and-push workflow.
 - **Fast-Track**: Adds all changes, commits with a custom or default message, and pushes to the remote repository in one command.
-
----
-
-## 🚀 Installation
-- Create a temporary local folder: `mkdir /ulb; cd /ulb`
-- Clone repository: `git clone https://github.com/SKJoy/ULB.git`
-- Set executable for all users: `chmod +x *; chmod 0755 *`
-- Move to Linux binary folder: `mv -f * /usr/local/bin`
-- You may delete the `/ulb` folder now
-
-### Verification
-- `24mb -h`
-- `gitpush`
 
 ## 📖 Usage Examples
 
