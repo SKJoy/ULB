@@ -1,4 +1,4 @@
-# 📦 ULB (usr/local/bin) Utility Pack
+# 📦 **ULB** (`/usr/local/bin`) utility
 
 A collection of high-performance, professional Linux utilities designed for efficiency, reliability, and a zero-dependency footprint. These tools are engineered to act as native system commands, providing a seamless experience for system administrators and developers.
 
