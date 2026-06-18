@@ -7,7 +7,7 @@ A collection of high-performance, professional Linux utilities designed for effi
 - Clone repository: `git clone https://github.com/SKJoy/ULB.git`
 - Set executable for all users: `chmod +x *; chmod 0755 *`
 - Move to Linux binary folder: `mv -f * /usr/local/bin`
-- You may delete the `/ulb` folder now
+- You may delete the `/ulb` folder now: `rm -rf /ulb`
 
 ### Verification command
 - `24mb -h`
