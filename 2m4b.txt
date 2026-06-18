@@ -1,0 +1,307 @@
+#!/bin/bash
+# ------------------------------------------------------------------------------
+#  📦 2m4b | Too Much for Backup
+#  ------------------------------------------------------------------------------
+# - PURPOSE: Universal Backup, Distribution, and Notification Pipeline
+# - VERSION: 1.0.0
+# - DESCRIPTION: 
+#   A comprehensive backup utility that handles local compression, 
+#   remote mirroring (NFS/Samba), offsite transfers (FTP/SSH), 
+#   multi-channel notifications (Webhook/SMTP), and automated retention.
+#  ------------------------------------------------------------------------------
+#  🚀 CAPABILITIES: Local Zip | Remote Mirror | FTP | SSH/SFTP | Webhook | SMTP
+#  🛡️ FEATURES: Dynamic Pathing | Absolute Resolution | Automated Pruning
+#  🛠️ ARCHITECT: Broken Arrow + Cozmi
+#  ------------------------------------------------------------------------------
+#  "Because 'enough' is never enough when it comes to data survival."
+# ------------------------------------------------------------------------------
+
+# Default Values
+SOURCE_PATH="$PWD"
+BACKUP_PATH="Backup"
+BACKUP_FILE_NAME="" # Initialize as empty to detect if it was overridden
+DELETE_BACKUP_FILE=false
+KEEP_COUNT=""
+KEEP_AGE=""
+COPY_PATH=""
+COMMAND_BEFORE=""
+COMMAND_AFTER=""
+
+# FTP Default Values
+FTP_HOST=""
+FTP_PORT="21"
+FTP_USER=""
+FTP_PASS=""
+FTP_REMOTE_PATH=""
+
+# SSH Default Values
+SSH_HOST=""
+SSH_PORT="22"
+SSH_USER=""
+SSH_PASSWORD=""
+SSH_KEY_FILE=""
+SSH_REMOTE_PATH=""
+
+# Webhook Default Values
+WEBHOOK_URL=""
+WEBHOOK_MESSAGE=""
+WEBHOOK_POST_FILE=false
+
+# SMTP Default Values
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_FROM=""
+SMTP_TO=""
+
+# Function to show help
+show_help() {
+    echo "Usage: backup [options]"
+    echo ""
+    echo "Options:"
+    echo "  -s, --source PATH         Override source directory (default: current directory)"
+    echo "  -t, --target PATH         Override target backup directory (default: ../Backup)"
+    echo "  -d, --delete              Delete backup file"
+    echo "  -n, --name NAME           Override backup filename (default: folder-timestamp)"
+    echo "  -c, --count NUM           Keep only the X latest backup files"
+    echo "  -a, --age DAYS            Keep backups newer than X days"
+    echo "  -l, --location PATH       Copy backup file to another path"
+    echo "  --command-before COMMAND  Shell command to run before; double quote escape required"
+    echo "  --command-after COMMAND   Shell command to run after; double quote escape required"
+    echo ""
+    echo "FTP Options:"
+    echo "  --ftp-host HOST           FTP Server Host"
+    echo "  --ftp-port PORT           FTP Server Port (default: 21)"
+    echo "  --ftp-user USER           FTP Username"
+    echo "  --ftp-password PASSWORD   FTP Password"
+    echo "  --ftp-path PATH           Remote directory to store backup"
+    echo ""
+    echo "SSH/SFTP Options:"
+    echo "  --ssh-host HOST           SSH Server Host"
+    echo "  --ssh-port PORT           SSH Server Port (default: 22)"
+    echo "  --ssh-user USER           SSH Username"
+    echo "  --ssh-password PASSWORD   SSH Password"
+    echo "  --ssh-key-file FILE       SSH Private Key File"
+    echo "  --ssh-path PATH           Remote directory to store backup"
+    echo ""
+    echo "Webhook Options:"
+    echo "  --webhook-url URL         Webhook endpoint URL"
+    echo "  --webhook-message         MSG Message to send via POST 'Message' variable"
+    echo "  --webhook-post            Upload backup file via POST 'File' variable"
+    echo ""
+    echo "SMTP Options:"
+    echo "  --smtp-host HOST          SMTP Server Host"
+    echo "  --smtp-port PORT          SMTP Server Port (default: 587)"
+    echo "  --smtp-user USER          SMTP Username"
+    echo "  --smtp-pass PASS          SMTP Password"
+    echo "  --smtp-from EMAIL         Sender Email"
+    echo "  --smtp-to EMAIL           Recipient Email"
+    echo ""
+    echo "  -h, --help                Show this help message"
+    exit 0
+}
+
+# Parse Arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -s|--source) SOURCE_PATH="$2"; shift 2 ;;
+        -t|--target) BACKUP_PATH="$2"; shift 2 ;;
+        -n|--name)    BACKUP_FILE_NAME="$2"; shift 2 ;;
+        -d|--delete)    DELETE_BACKUP_FILE=true; shift 1 ;;
+        -c|--count)    KEEP_COUNT="$2"; shift 2 ;;
+        -a|--age)      KEEP_AGE="$2"; shift 2 ;;
+        -l|--location)      COPY_PATH="$2"; shift 2 ;;
+        --command-before)      COMMAND_BEFORE="$2"; shift 2 ;;
+        --command-after)      COMMAND_AFTER="$2"; shift 2 ;;
+        --ftp-host)   FTP_HOST="$2"; shift 2 ;;
+        --ftp-port)   FTP_PORT="$2"; shift 2 ;;
+        --ftp-user)    FTP_USER="$2"; shift 2 ;;
+        --ftp-password) FTP_PASS="$2"; shift 2 ;;
+        --ftp-path)   FTP_REMOTE_PATH="$2"; shift 2 ;;
+        --ssh-host)   SSH_HOST="$2"; shift 2 ;;
+        --ssh-port)   SSH_PORT="$2"; shift 2 ;;
+        --ssh-user)    SSH_USER="$2"; shift 2 ;;
+        --ssh-password) SSH_PASSWORD="$2"; shift 2 ;;
+        --ssh-key-file) SSH_KEY_FILE="$2"; shift 2 ;;
+        --ssh-path)   SSH_REMOTE_PATH="$2"; shift 2 ;;
+        --webhook-url) WEBHOOK_URL="$2"; shift 2 ;;
+        --webhook-message) WEBHOOK_MESSAGE="$2"; shift 2 ;;
+        --webhook-post) WEBHOOK_POST_FILE=true; shift 1 ;;
+        --smtp-host)   SMTP_HOST="$2"; shift 2 ;;
+        --smtp-port)   SMTP_PORT="$2"; shift 2 ;;
+        --smtp-user)    SMTP_USER="$2"; shift 2 ;;
+        --smtp-pass)    SMTP_PASS="$2"; shift 2 ;;
+        --smtp-from)    SMTP_FROM="$2"; shift 2 ;;
+        --smtp-to)      SMTP_TO="$2"; shift 2 ;;
+        -h|--help)    show_help ;;
+        *) echo "Unknown option: $1"; show_help ;;
+    esac
+done
+
+# Path Resolution
+ABSOLUTE_SOURCE_PATH=$(realpath "$SOURCE_PATH")
+ABSOLUTE_TARGET_PATH=$(cd "$(dirname "$BACKUP_PATH")" && pwd)/$(basename "$BACKUP_PATH")
+
+# Filename Logic
+if [[ -n "$BACKUP_FILE_NAME" ]]; then
+    if [[ "$BACKUP_FILE_NAME" != *.zip ]]; then
+        BACKUP_FILE_NAME="${BACKUP_FILE_NAME}.zip"
+    fi
+else
+    TIMESTAMP=$(date +"%Y-%m-%d-%H-%M-%S")
+    BACKUP_FILE_NAME="$(basename "$ABSOLUTE_SOURCE_PATH")-${TIMESTAMP}.zip"
+fi
+
+BACKUP_FILE="${ABSOLUTE_TARGET_PATH}/${BACKUP_FILE_NAME}"
+
+# Execute command before process starts
+if [[ -n "$COMMAND_BEFORE" ]]; then
+    echo "⚙️ Excuting pre backup command..."
+    eval "${COMMAND_BEFORE} \"${BACKUP_FILE}\" \"${ABSOLUTE_SOURCE_PATH}\""
+fi
+
+# Execution
+echo "⏳ Backup in progress..."
+mkdir -p "$ABSOLUTE_TARGET_PATH"
+
+# Create Local Zip
+cd "$ABSOLUTE_SOURCE_PATH" && \
+    zip -r9q "${BACKUP_FILE}" . -x \
+		"Backup/*" \
+		".git/*" && \
+    echo "📦 Backup file: $(realpath "${BACKUP_FILE}")" || \
+    echo "❌ Backup failed!"
+
+# Copy to another location like network/remote/mounted/fused path
+if [[ -n "$COPY_PATH" && -f "$BACKUP_FILE" ]]; then
+    echo "📂 Copying backup file to '${COPY_PATH}'..."
+
+	mkdir -p ${COPY_PATH}
+
+    cp "${BACKUP_FILE}" "$COPY_PATH" && \
+    	echo "✅ Backup file copied successfully" || \
+    	echo "❌ Backup file copy failed!"
+fi
+
+# SSH/SFTP Upload Logic
+if [[ -n "$SSH_HOST" && -f "${BACKUP_FILE}" ]]; then
+    echo "🔐 Uploading via SSH/SCP..."
+    
+    # 1. Determine the Transfer Method (Key vs Password)
+    if [[ -n "$SSH_KEY_FILE" ]]; then
+        # Use Key-based authentication
+        AUTH_METHOD="scp -P ${SSH_PORT} -i ${SSH_KEY_FILE}"
+        REMOTE_CMD="ssh -p ${SSH_PORT} -i ${SSH_KEY_FILE}"
+    elif [[ -n "$SSH_PASSWORD" ]]; then
+        # Use Password-based authentication (via sshpass)
+        # Check if sshpass is installed first
+        if ! command -v sshpass &> /dev/null; then
+            echo "❌ 'sshpass' not installed. Please install it to use password-based SSH."
+            SSH_SKEW=true
+        else
+            AUTH_METHOD="sshpass -p ${SSH_PASSWORD} scp -P ${SSH_PORT}"
+            REMOTE_CMD="sshpass -p ${SSH_PASSWORD} ssh -p ${SSH_PORT}"
+        fi
+    else
+        echo "❌ No SSH Key or Password provided. Skipping SSH upload."
+        SSH_SKEW=true
+    fi
+
+    # 2. Execute the Transfer if no error occurred
+    if [[ -z "$SSH_SKEW" ]]; then
+        # Step A: Ensure remote directory exists
+        $REMOTE_CMD "${SSH_USER}@${SSH_HOST}" "mkdir -p ${SSH_REMOTE_PATH}" 2>/dev/null
+        
+        # Step B: Perform the copy
+        $AUTH_METHOD "${BACKUP_FILE}" "${SSH_USER}@${SSH_HOST}:${SSH_REMOTE_PATH%/}/${BACKUP_FILE_NAME}" && \
+            echo "🚀 SSH Upload successful: ${SSH_REMOTE_PATH}/${BACKUP_FILE_NAME}" || \
+            echo "❌ SSH Upload failed!"
+    fi
+fi
+
+# FTP Upload Logic
+# Only proceed if FTP Host is specified AND the backup file actually exists on disk
+if [[ -n "$FTP_HOST" && -f "${BACKUP_FILE}" ]]; then
+    echo "📤 Uploading to FTP..."
+    
+    curl --create-dirs -u "${FTP_USER}:${FTP_PASS}" \
+        -T "${BACKUP_FILE}" \
+        "ftp://${FTP_USER}:${FTP_PASS}@${FTP_HOST}:${FTP_PORT}/${FTP_REMOTE_PATH%/}/${BACKUP_FILE_NAME}" && \
+        echo "🚀 FTP Upload successful: ${FTP_REMOTE_PATH}/${BACKUP_FILE_NAME}" || \
+        echo "❌ FTP Upload failed!"
+fi
+
+# Webhook Logic
+if [[ -n "$WEBHOOK_URL" && -f "${BACKUP_FILE}" ]]; then
+    echo "🌐 Sending notification to webhook..."
+    
+    # 1. Set default message if the user didn't provide one
+    WEBHOOK_MESSAGE="${WEBHOOK_MESSAGE:-Backup completed for '${ABSOLUTE_SOURCE_PATH}' as '${BACKUP_FILE}'}"
+
+    # 2. Build the command as an ARRAY (The Professional Way)
+    CURL_ARGS=(-s -X POST "$WEBHOOK_URL" -d "Message=$WEBHOOK_MESSAGE")
+    
+    # 3. Add the 'Backup' upload if requested
+    if [[ "$WEBHOOK_POST_FILE" = true ]]; then
+        CURL_ARGS+=("-F" "Backup=@${BACKUP_FILE}")
+    fi
+    
+    # Execute the array as arguments to curl
+    curl "${CURL_ARGS[@]}" > /dev/null && echo "📢 Webhook notified successfully!" || echo "❌ Webhook failed!"
+fi
+
+# SMTP Email Logic
+if [[ -n "$SMTP_HOST" && -n "$SMTP_TO" ]]; then
+	if [[ -f "${BACKUP_FILE}" ]]; then
+		# Default subject and body if not provided
+		EMAIL_SUBJECT="✅ Backup notification: $(basename "$ABSOLUTE_SOURCE_PATH")"
+		EMAIL_BODY="Backup successfully completed.\n\n- 📂 Source: '${ABSOLUTE_SOURCE_PATH}'\n- 📦 File: '${BACKUP_FILE}'\n- ⌚ Timestamp: '$(date)'"
+		
+		# We must construct a raw SMTP data stream
+		# Format: From: ...\r\nTo: ...\r\nSubject: ...\r\n\r\nBody
+		# We use a heredoc to create the email content
+		EMAIL_CONTENT="From: ${SMTP_FROM}\r\nTo: ${SMTP_TO}\r\nSubject: ${EMAIL_SUBJECT}\r\n\r\n${EMAIL_BODY}"
+	else
+		EMAIL_SUBJECT="❌ Backup failed: $(basename "$ABSOLUTE_SOURCE_PATH")"
+		EMAIL_BODY="Backup failed.\n\n- 📂 Source: '${ABSOLUTE_SOURCE_PATH}'\n- ⌚ Timestamp: '$(date)'"
+		EMAIL_CONTENT="From: ${SMTP_FROM}\r\nTo: ${SMTP_TO}\r\nSubject: ${EMAIL_SUBJECT}\r\n\r\n${EMAIL_BODY}"
+	fi
+
+	# The curl SMTP command
+	# --ssl-reqd ensures we use encrypted connection (essential for modern servers)
+	curl -s --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
+		--ssl-reqd \
+		-u "${SMTP_USER}:${SMTP_PASS}" \
+		-M <(echo -e "$EMAIL_CONTENT") && \
+		echo "📬 Email sent successfully!" || \
+		echo "❌ Email failed to send!"
+
+	echo "📧 Email notification sent to '${SMTP_TO}'"
+fi
+
+# --- Retention Logic (Pruning) ---
+if [[ -n "$KEEP_COUNT" ]]; then
+    echo "🧹 Pruning: Keep last $KEEP_COUNT file(s) only..."
+    # List files by time (newest first), skip the first X, delete the rest
+    # We filter by the current app name to avoid deleting unrelated zips in the target folder
+    ls -tp "${ABSOLUTE_TARGET_PATH}"/"$(basename "$ABSOLUTE_SOURCE_PATH")"-*.zip | grep -v '/$' | tail -n +$((KEEP_COUNT + 1)) | xargs -I {} rm -f {}
+fi
+
+if [[ -n "$KEEP_AGE" ]]; then
+    echo "🧹 Pruning: Delete files older than $KEEP_AGE days..."
+    # Find files matching the pattern that are older than X days
+    find "$ABSOLUTE_TARGET_PATH" -name "$(basename "$ABSOLUTE_SOURCE_PATH")-*.zip" -type f -mtime +"$KEEP_AGE" -exec rm -f {} \;
+fi
+
+# Delete local backup file if flag is set
+if [[ "$DELETE_BACKUP_FILE" = true && -f "${BACKUP_FILE}" ]]; then
+    rm -f "${BACKUP_FILE}"
+    echo "📦 Local backup file removed"
+fi
+
+# Execute command after process ends
+if [[ -n "$COMMAND_AFTER" ]]; then
+    echo "⚙️ Excuting post backup command..."
+    eval "${COMMAND_AFTER} \"${BACKUP_FILE}\" \"${ABSOLUTE_SOURCE_PATH}\""
+fi
