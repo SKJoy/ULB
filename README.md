@@ -18,27 +18,16 @@ A streamlined wrapper for the Git commit-and-push workflow.
 
 ---
 
-## 🚀 Deployment Guide
+## 🚀 Installation
+- Create a temporary local folder: `mkdir /ulb; cd /ulb`
+- Clone repository: `git clone https://github.com/SKJoy/ULB.git`
+- Set executable for all users: `chmod +x *; chmod 0755 *`
+- Move to Linux binary folder: `mv -f * /usr/local/bin`
+- You may delete the `/ulb` folder now
 
-To use these utilities as native system commands from any directory, they must be deployed to `/usr/local/bin`.
-
-### 1. Installation & Permissions
-Copy the scripts to the local binary directory and grant them execution permissions:
-```bash
-# Copy files to local bin
-sudo cp 2m4b /usr/local/bin/
-sudo cp gitpush /usr/local/bin/
-
-# Grant execution permissions
-sudo chmod +x /usr/local/bin/2m4b
-sudo chmod +x /usr/local/bin/gitpush
-```
-
-### 2. Verification
-```bash
-2m4b --help
-gitpush
-```
+### Verification
+- `24mb -h`
+- `gitpush`
 
 ## 📖 Usage Examples
 
