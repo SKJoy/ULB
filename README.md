@@ -10,7 +10,7 @@ A collection of high-performance, professional Linux utilities designed for effi
 - You may delete the `/ulb` folder now: `rm -rf /ulb`
 
 ### Verification command
-- `24mb -h`
+- `2m4b -h`
 - `gitpush`
 
 ## 🛠️ Included Utilities
