@@ -155,19 +155,20 @@ fi
 
 BACKUP_FILE="${ABSOLUTE_TARGET_PATH}/${BACKUP_FILE_NAME}"
 
+# Execution
+echo "⏳ Backup in progress..."
+
+mkdir -p "$ABSOLUTE_TARGET_PATH"
+cd "$ABSOLUTE_SOURCE_PATH"
+
 # Execute command before process starts
 if [[ -n "$COMMAND_BEFORE" ]]; then
     echo "⚙️ Excuting pre backup command..."
     eval "${COMMAND_BEFORE} \"${BACKUP_FILE}\" \"${ABSOLUTE_SOURCE_PATH}\""
 fi
 
-# Execution
-echo "⏳ Backup in progress..."
-mkdir -p "$ABSOLUTE_TARGET_PATH"
-
 # Create Local Zip
-cd "$ABSOLUTE_SOURCE_PATH" && \
-    zip -r9q "${BACKUP_FILE}" . -x \
+zip -r9q "${BACKUP_FILE}" . -x \
 		"Backup/*" \
 		".git/*" && \
     echo "📦 Backup file: $(realpath "${BACKUP_FILE}")" || \
