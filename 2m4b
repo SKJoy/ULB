@@ -140,8 +140,22 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Path Resolution
-ABSOLUTE_SOURCE_PATH=$(realpath "$SOURCE_PATH")
-ABSOLUTE_TARGET_PATH=$(cd "$(dirname "$BACKUP_PATH")" && pwd)/$(basename "$BACKUP_PATH")
+ABSOLUTE_SOURCE_PATH=$(realpath "$SOURCE_PATH" 2>/dev/null)
+
+# VALIDATION: Ensure the source path exists and is a directory
+if [[ ! -d "$ABSOLUTE_SOURCE_PATH" ]]; then
+    echo "❌ Error: Source path '$SOURCE_PATH' does not exist or is not a directory."
+    exit 1
+fi
+
+if [[ "$BACKUP_PATH" == "Backup" ]]; then
+    # Default case: Target is relative to the source project
+    ABSOLUTE_TARGET_PATH="${ABSOLUTE_SOURCE_PATH}/Backup"
+else
+    # User provided a specific target path; resolve it universally
+    # This method works regardless of the realpath version
+    ABSOLUTE_TARGET_PATH=$(cd "$(dirname "$BACKUP_PATH")" && pwd)/$(basename "$BACKUP_PATH")
+fi
 
 # Filename Logic
 if [[ -n "$BACKUP_FILE_NAME" ]]; then
@@ -156,8 +170,6 @@ fi
 BACKUP_FILE="${ABSOLUTE_TARGET_PATH}/${BACKUP_FILE_NAME}"
 
 # Execution
-echo "⏳ Backup in progress..."
-
 mkdir -p "$ABSOLUTE_TARGET_PATH"
 cd "$ABSOLUTE_SOURCE_PATH"
 
@@ -168,6 +180,8 @@ if [[ -n "$COMMAND_BEFORE" ]]; then
 fi
 
 # Create Local Zip
+echo "⏳ Backup in progress..."
+
 zip -r9q "${BACKUP_FILE}" . -x \
 		"Backup/*" \
 		".git/*" && \
@@ -177,7 +191,6 @@ zip -r9q "${BACKUP_FILE}" . -x \
 # Copy to another location like network/remote/mounted/fused path
 if [[ -n "$COPY_PATH" && -f "$BACKUP_FILE" ]]; then
     echo "📂 Copying backup file to '${COPY_PATH}'..."
-
 	mkdir -p ${COPY_PATH}
 
     cp "${BACKUP_FILE}" "$COPY_PATH" && \
