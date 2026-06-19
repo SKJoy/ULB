@@ -41,11 +41,15 @@ Advanced Remote Pipeline:
 
 ```bash
 2m4b -s /var/www/html -t /mnt/backups -c 10 \
-     --ftp-host ftp.example.com --ftp-user admin --ftp-password secret \
-     --webhook-url https://hooks.example.com/alert --webhook-post \
-     --command-before "docker compose down" \
-     --command-after "docker compose up -d"
+	--ftp-host ftp.example.com --ftp-user admin --ftp-password secret \
+	--webhook-url https://hooks.example.com/alert --webhook-post \
+	--command-before "docker compose down;#" \
+	--command-after "docker compose up -d;#"
 ```
+
+Note;
+- **Backup file path** and **source path** are automatically *appended* to the `--command-before` & `--command-after` commands
+- Use `;#` at the end of `--command-before` & `--command-after` commands to suppress trailing arguments
 
 ### `gitpush` (The Efficiency Tool)
 
