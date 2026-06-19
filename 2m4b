@@ -16,9 +16,11 @@
 #  "Because 'enough' is never enough when it comes to data survival."
 # ------------------------------------------------------------------------------
 
+DEFAULT_BACKUP_PATH="Backup"
+
 # Default Values
 SOURCE_PATH="$PWD"
-BACKUP_PATH="Backup"
+BACKUP_PATH="${DEFAULT_BACKUP_PATH}"
 BACKUP_FILE_NAME="" # Initialize as empty to detect if it was overridden
 DELETE_BACKUP_FILE=false
 KEEP_COUNT=""
@@ -61,7 +63,7 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  -s, --source PATH         Override source directory (default: current directory)"
-    echo "  -t, --target PATH         Override target backup directory (default: ../Backup)"
+    echo "  -t, --target PATH         Override target backup directory (default: '${DEFAULT_BACKUP_PATH}')"
     echo "  -d, --delete              Delete backup file"
     echo "  -n, --name NAME           Override backup filename (default: folder-timestamp)"
     echo "  -c, --count NUM           Keep only the X latest backup files"
@@ -139,16 +141,16 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Path Resolution
+# Validate source path to backup from
 ABSOLUTE_SOURCE_PATH=$(realpath "$SOURCE_PATH" 2>/dev/null)
 
-# VALIDATION: Ensure the source path exists and is a directory
 if [[ ! -d "$ABSOLUTE_SOURCE_PATH" ]]; then
     echo "❌ Error: Source path '$SOURCE_PATH' does not exist or is not a directory."
     exit 1
 fi
 
-if [[ "$BACKUP_PATH" == "Backup" ]]; then
+# Determine target backup path
+if [[ "$BACKUP_PATH" == "$DEFAULT_BACKUP_PATH" ]]; then
     # Default case: Target is relative to the source project
     ABSOLUTE_TARGET_PATH="${ABSOLUTE_SOURCE_PATH}/Backup"
 else
