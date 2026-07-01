@@ -25,11 +25,11 @@ cd /tmp && \
 
 ### Verification command
 - `2m4b -h`
-- `gitpush`
+- `gacp`
 
 ## 🛠️ Included Utilities
 
-### 1. `2m4b` (Too Much for Backup)
+### 1. `2m4b`: Too Much for Backup
 A universal, multi-channel backup and distribution pipeline.
 - **Local**: Dynamic compression with automated pruning (count/age).
 - **Mirroring**: Direct copying to network/mounted paths.
@@ -37,13 +37,13 @@ A universal, multi-channel backup and distribution pipeline.
 - **Notification**: Real-time alerts via Webhooks and SMTP.
 - **Lifecycle**: Pre- and post-backup shell command hooks.
 
-### 2. `gitpush`
+### 2. `gacp`: Git push helper
 A streamlined wrapper for the Git commit-and-push workflow.
 - **Fast-Track**: Adds all changes, commits with a custom or default message, and pushes to the remote repository in one command.
 
 ## 📖 Usage Examples
 
-### `2m4b` (The Backup Powerhouse)
+### `2m4b`: Too Much for Backup
 
 Standard Local Backup:
 
@@ -51,7 +51,7 @@ Standard Local Backup:
 2m4b
 ```
 
-Advanced Remote Pipeline:
+Advanced remote pipeline:
 
 ```bash
 2m4b -s /var/www/html -t /mnt/backups -c 10 \
@@ -62,19 +62,20 @@ Advanced Remote Pipeline:
 ```
 
 Note;
+- Use `2m4b --help` for complete options
 - **Backup file path** and **source path** are automatically *appended* to the `--command-before` & `--command-after` commands
 - Use `;#` at the end of `--command-before` & `--command-after` commands to suppress trailing arguments
 
-### `gitpush` (The Efficiency Tool)
+### `gacp`: Git push helper
 
 Push with default message ("Update"):
 
 ```bash
-gitpush
+gacp
 ```
 
 Push with custom message:
 
 ```bash
-gitpush "Fixed critical bug in API"
+gacp "Fixed critical bug in API"
 ```
