@@ -3,11 +3,25 @@
 A collection of high-performance, professional Linux utilities designed for efficiency, reliability, and a zero-dependency footprint. These tools are engineered to act as native system commands, providing a seamless experience for system administrators and developers.
 
 ## 🚀 Installation
-- Create a temporary local folder: `mkdir /ulb; cd /ulb`
-- Clone repository: `git clone https://github.com/SKJoy/ULB.git`
-- Set executable for all users: `chmod 755 *`
-- Move to Linux binary folder: `mv -f * /usr/local/bin`
-- You may delete the `/ulb` folder now: `rm -rf /ulb`
+
+Run the following command as `root` user;
+
+```bash
+cd /tmp && \
+	git clone -q https://github.com/SKJoy/ULB.git && \
+	rm -f ULB/README.md && \
+	chmod 755 ULB/* && \
+	mv -f ULB/* /usr/local/bin/ && \
+	rm -rf ULB
+```
+
+### What does it do?
+- Use a temporary path: `cd /tmp`
+- Clone repository: `git clone -q https://github.com/SKJoy/ULB.git`
+- Remove README.md file: `rm -f ULB/README.md`
+- Set executable for all users: `chmod 755 ULB/*`
+- Move to Linux binary folder: `mv -f ULB/* /usr/local/bin/`
+- Delete the temporary folder: `rm -rf ULB`
 
 ### Verification command
 - `2m4b -h`

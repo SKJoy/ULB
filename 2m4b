@@ -185,8 +185,15 @@ fi
 echo "⏳ Backup in progress..."
 
 zip -r9q "${BACKUP_FILE}" . -x \
-		"Backup/*" \
-		".git/*" && \
+		"*.swp" \
+		"*.swo" \
+		"*~" \
+		"Thumbs.db" \
+		".DS_Store" \
+		".git/*" \
+		".idea/*" \
+		".vscode/*" \
+		"Backup/*" && \
     echo "📦 Backup file: $(realpath "${BACKUP_FILE}")" || \
     echo "❌ Backup failed!"
 
